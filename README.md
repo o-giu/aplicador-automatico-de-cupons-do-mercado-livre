@@ -12,7 +12,7 @@ Este script automatiza a aplicação de cupons no Mercado Livre, navegando por t
 | Etapa | Descrição | Detalhes |
 |-------|-----------|----------|
 | **1. Instalar Extensão** | Instale uma extensão de UserScript | • [Violentmonkey](https://chromewebstore.google.com/detail/violentmonkey/jinjaccalgkegednnccohejagnlnfdag) (Eu gosto de usar esse) |
-| **2. Criar Novo Script** | Abra a extensão e crie um novo script | • Clique no ícone da extensão<br>• Selecione o + "Criar novo script"<br>• Cole o código fornecido |
+| **2. Criar Novo Script** | Abra a extensão e crie um novo script | • Clique no ícone da extensão<br>• Selecione o + "Criar novo script"<br>• Cole o [código](https://github.com/o-giu/giu-aplicador-automatico-de-cupons-do-mercado-livre/blob/main/script.js) fornecido |
 | **3. Salvar Script** | Salve o script | • Certifique-se que está ativo<br>• O script funcionará apenas em páginas de cupons do ML |
 
 ---
