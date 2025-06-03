@@ -1,4 +1,4 @@
-# 🚀 Tutorial - Aplicador Automático de Cupons do Mercado Livre
+# 🚀 Aplicador Automático de Cupons do Mercado Livre
 
 ## 📋 Visão Geral
 
