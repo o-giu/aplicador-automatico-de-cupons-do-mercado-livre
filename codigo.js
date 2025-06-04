@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Giu - Mercado Livre - Aplicador Automático de Cupons
-// @version      1.2
-// @description  Aplica todos os cupons de todas as páginas automaticamente
+// @version      1.4 // Versão atualizada
+// @description  Aplica todos os cupons de todas as páginas automaticamente no Mercado Livre
 // @author       Giu
 // @match        https://www.mercadolivre.com.br/cupons*
 // @grant        none
@@ -10,6 +10,24 @@
 
 (function() {
     'use strict';
+
+    // --- VERIFICAÇÕES CRÍTICAS DE URL E CONTEXTO ---
+    // 1. Assegura que o script só roda no frame principal (não em iframes, que são comuns em modais)
+    if (window.self !== window.top) {
+        console.log('Giu Auto ML Cupom - Rodando dentro de um iframe (modal de cupom no carrinho, etc.). Script não será executado neste contexto.');
+        return; // Sai do script imediatamente
+    }
+
+    // 2. Assegura que o script só roda nas URLs específicas da página *principal* de cupons.
+    // Isso evita que ele apareça em modais ou URLs que contenham "cupons" mas não sejam a página dedicada.
+    const validCouponPagePaths = ['/cupons', '/cupons/filter'];
+    const isMainCouponPage = validCouponPagePaths.some(path => window.location.pathname.startsWith(path));
+
+    if (!isMainCouponPage) {
+        console.log('Giu Auto ML Cupom - Não é a página principal de cupons do Mercado Livre. Script não será executado.');
+        return; // Sai do script imediatamente
+    }
+    // --- FIM DAS VERIFICAÇÕES CRÍTICAS ---
 
     console.log('🚀 Giu Auto ML Cupom - Script iniciado:', window.location.href);
 
@@ -28,14 +46,14 @@
     let state = {
         isRunning: localStorage.getItem(STORAGE.running) === 'true',
         currentPage: parseInt(localStorage.getItem(STORAGE.page) || '1'),
-        totalPages: parseInt(localStorage.getItem(STORAGE.total) || '25'),
+        totalPages: parseInt(localStorage.getItem(STORAGE.total) || '25'), // Valor padrão se não houver no storage
         totalApplied: parseInt(localStorage.getItem(STORAGE.applied) || '0'),
         processedPages: JSON.parse(localStorage.getItem(STORAGE.processed) || '[]'),
         isFinished: localStorage.getItem(STORAGE.finished) === 'true',
-        startTime: localStorage.getItem(STORAGE.startTime) || Date.now()
+        startTime: localStorage.getItem(STORAGE.startTime) || Date.now() // Mantém o tempo de início se já estiver rodando
     };
 
-    console.log('Estado atual:', state);
+    console.log('Estado atual carregado:', state);
 
     // Salvar estado
     function saveState() {
@@ -55,12 +73,13 @@
         state = {
             isRunning: false,
             currentPage: 1,
-            totalPages: 25,
+            totalPages: 25, // Resetar para o valor padrão
             totalApplied: 0,
             processedPages: [],
             isFinished: false,
             startTime: Date.now()
         };
+        saveState(); // Salva o estado limpo
         console.log('Estado limpo');
     }
 
@@ -71,7 +90,7 @@
             top: 20px !important;
             right: 20px !important;
             z-index: 999999 !important;
-            background: ${state.isRunning ? 'linear-gradient(135deg, #ef4444, #dc2626)' : 'linear-gradient(135deg, #22c55e, #16a34a)'} !important;
+            background: ${state.isRunning ? 'linear-gradient(135deg, #ef4444, #dc2626)' : (state.isFinished ? 'linear-gradient(135deg, #8b5cf6, #7c3aed)' : 'linear-gradient(135deg, #22c55e, #16a34a)')} !important;
             color: white !important;
             border: none !important;
             padding: 15px 25px !important;
@@ -83,6 +102,7 @@
             font-family: Arial, sans-serif !important;
             min-width: 250px !important;
             animation: ${state.isRunning ? 'pulse-red 1.5s infinite' : 'none'} !important;
+            transition: background 0.3s ease, transform 0.3s ease;
         }
 
         @keyframes pulse-red {
@@ -104,6 +124,8 @@
             max-width: 350px !important;
             border-left: 5px solid ${state.isFinished ? '#22c55e' : '#3b82f6'} !important;
             display: block !important;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            white-space: pre-wrap; /* Permite quebras de linha no HTML */
         }
 
         #super-final-stats {
@@ -123,6 +145,7 @@
             text-align: center !important;
             min-width: 400px !important;
             animation: slideIn 0.5s ease-out !important;
+            border: 2px solid rgba(255,255,255,0.3);
         }
 
         @keyframes slideIn {
@@ -130,18 +153,29 @@
             to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
         }
 
-        .stats-close-btn {
-            position: absolute !important;
-            top: 10px !important;
-            right: 15px !important;
+        .stats-button {
             background: rgba(255,255,255,0.2) !important;
-            border: none !important;
+            border: 1px solid white !important;
             color: white !important;
-            font-size: 18px !important;
-            font-weight: bold !important;
+            padding: 10px 20px !important;
+            border-radius: 5px !important;
             cursor: pointer !important;
-            padding: 5px 10px !important;
-            border-radius: 50% !important;
+            margin: 5px !important;
+            font-size: 14px !important;
+            transition: background 0.2s ease, transform 0.1s ease;
+        }
+        .stats-button:hover {
+            background: rgba(255,255,255,0.3) !important;
+            transform: translateY(-1px);
+        }
+        #new-automation-btn {
+            background: rgba(255,255,255,0.9) !important;
+            color: #22c55e !important;
+            font-weight: bold !important;
+        }
+        #new-automation-btn:hover {
+            background: white !important;
+            color: #16a34a !important;
         }
     `;
 
@@ -157,6 +191,7 @@
 
     // Formatear tempo decorrido
     function formatElapsedTime() {
+        if (!state.startTime) return '0:00'; // Caso startTime não esteja definido
         const elapsed = Date.now() - state.startTime;
         const minutes = Math.floor(elapsed / 60000);
         const seconds = Math.floor((elapsed % 60000) / 1000);
@@ -179,7 +214,7 @@
 📊 Giu Auto ML Cupom ${state.isFinished ? 'FINALIZADO' : 'ATIVADO'}
 ${message}
 ━━━━━━━━━━━━━━━━━━━━━━
-📄 Página: ${currentPage} / ${state.totalPages}
+📄 Página: ${state.processedPages.length > 0 ? currentPage : '-'} / ${state.totalPages}
 ✅ Cupons aplicados: ${state.totalApplied}
 📋 Páginas processadas: ${state.processedPages.length}
 ⏱️ Tempo decorrido: ${elapsedTime}
@@ -216,31 +251,13 @@ Status: ${state.isRunning ? '🔄 RODANDO...' : state.isFinished ? '🎉 CONCLU�
             <h2 style="margin: 0 0 20px 0; font-size: 24px;">🎉 AUTOMAÇÃO CONCLUÍDA!</h2>
             <div style="text-align: left; margin: 20px 0;">
                 <p><strong>✅ Total de cupons aplicados:</strong> ${state.totalApplied}</p>
-                <p><strong>📄 Páginas processadas:</strong> ${state.processedPages.length}/${state.totalPages}</p>
+                <p><strong>📄 Páginas processadas:</strong> ${state.processedPages.length} de ${state.totalPages}</p>
                 <p><strong>⏱️ Tempo total:</strong> ${elapsedTime}</p>
-                <p><strong>🎯 Páginas visitadas:</strong> ${state.processedPages.sort((a,b) => a-b).join(', ')}</p>
+                <p><strong>🎯 Páginas visitadas:</strong> ${state.processedPages.length > 0 ? state.processedPages.sort((a,b) => a-b).join(', ') : 'Nenhuma'}</p>
             </div>
             <div style="margin-top: 20px;">
-                <button id="close-stats-btn" style="
-                    background: rgba(255,255,255,0.2) !important;
-                    border: 1px solid white !important;
-                    color: white !important;
-                    padding: 10px 20px !important;
-                    border-radius: 5px !important;
-                    cursor: pointer !important;
-                    margin-right: 10px !important;
-                    font-size: 14px !important;
-                ">Fechar</button>
-                <button id="new-automation-btn" style="
-                    background: rgba(255,255,255,0.9) !important;
-                    border: 1px solid white !important;
-                    color: #22c55e !important;
-                    padding: 10px 20px !important;
-                    border-radius: 5px !important;
-                    cursor: pointer !important;
-                    font-size: 14px !important;
-                    font-weight: bold !important;
-                ">Nova Automação</button>
+                <button id="close-stats-btn" class="stats-button">Fechar</button>
+                <button id="new-automation-btn" class="stats-button">Nova Automação</button>
             </div>
         `;
 
@@ -249,10 +266,10 @@ Status: ${state.isRunning ? '🔄 RODANDO...' : state.isFinished ? '🎉 CONCLU�
         // Adiciona eventos de clique
         document.getElementById('close-stats-btn').addEventListener('click', closeModal);
         document.getElementById('new-automation-btn').addEventListener('click', () => {
-            clearState();
-            closeModal();
-            updateButton();
-            updateStatus('✅ Pronto para nova automação!');
+            clearState(); // Limpa o estado
+            closeModal(); // Fecha o modal
+            updateButton(); // Atualiza o botão para o estado inicial
+            updateStatus('✅ Pronto para nova automação!'); // Atualiza o status
         });
 
         // Fechar com ESC
@@ -263,20 +280,6 @@ Status: ${state.isRunning ? '🔄 RODANDO...' : state.isFinished ? '🎉 CONCLU�
             }
         }
         document.addEventListener('keydown', handleEscKey);
-
-        // Fechar clicando fora do modal
-        modal.addEventListener('click', (event) => {
-            if (event.target === modal) {
-                closeModal();
-            }
-        });
-
-        // Remove automaticamente após 60 segundos se não for fechado manualmente
-        setTimeout(() => {
-            if (document.getElementById('super-final-stats')) {
-                closeModal();
-            }
-        }, 60000);
     }
 
     // Obter página atual da URL
@@ -285,91 +288,79 @@ Status: ${state.isRunning ? '🔄 RODANDO...' : state.isFinished ? '🎉 CONCLU�
         return parseInt(url.searchParams.get('page') || '1');
     }
 
-    // Verificar se há próxima página (corrigido)
+    // Verificar se há próxima página
     function hasNextPage() {
         const currentPage = getCurrentPage();
 
-        console.log(`🔍 Verificando se há próxima página após a atual: ${currentPage}`);
+        // 1. Verificar se existe um link explícito para a próxima página
+        const nextPageSelectors = [
+            `a[href*="page=${currentPage + 1}"]`,
+            'a[title="Siguiente"]', // Título para "Próximo" em espanhol
+            'a[aria-label="Siguiente"]',
+            'a[aria-label="Próximo"]', // Título para "Próximo" em português
+            '.andes-pagination__button--next:not([disabled])' // Botão "Próximo" não desabilitado
+        ];
 
-        try {
-            // Primeiro verifica se existem elementos de paginação
-            const paginationExists = document.querySelector('.andes-pagination') ||
-                                    document.querySelector('[class*="pagination"]') ||
-                                    document.querySelector('a[href*="page="]');
-
-            if (!paginationExists) {
-                console.log('❌ Não encontrou elementos de paginação - assumindo que há mais páginas');
-                // Se não tem paginação visível, continua até um limite seguro
-                return currentPage < 50; // Limita a 50 páginas para evitar loop infinito
-            }
-
-            // Verifica se existem links para próxima página
-            const nextPageSelectors = [
-                `a[href*="page=${currentPage + 1}"]`,
-                'a[title="Siguiente"]',
-                'a[aria-label="Siguiente"]',
-                '.andes-pagination__button--next:not([disabled])',
-                'a[aria-label="Próximo"]',
-                'a[title="Próximo"]'
-            ];
-
-            let hasNext = false;
-            nextPageSelectors.forEach(selector => {
-                try {
-                    const element = document.querySelector(selector);
-                    if (element && !element.disabled && element.getAttribute('aria-disabled') !== 'true') {
-                        console.log(`✅ Encontrou próxima página com seletor: ${selector}`);
-                        hasNext = true;
-                    }
-                } catch (e) {
-                    console.log(`Erro ao verificar seletor ${selector}:`, e);
+        for (const selector of nextPageSelectors) {
+            try {
+                const element = document.querySelector(selector);
+                if (element && !element.disabled && element.getAttribute('aria-disabled') !== 'true') {
+                    console.log(`✅ Encontrou próxima página com seletor: ${selector}`);
+                    return true;
                 }
-            });
-
-            // Se não encontrou via seletores, verifica se o número da página atual é muito baixo
-            if (!hasNext && currentPage < 5) {
-                console.log('🤔 Não encontrou próxima página mas está nas primeiras páginas - continuando');
-                hasNext = true; // Nas primeiras páginas, assume que há mais
+            } catch (e) {
+                console.log(`Erro ao verificar seletor ${selector}:`, e);
             }
-
-            // Verifica se há cupons na página atual (corrigido sem :contains)
-            const allButtons = document.querySelectorAll('button');
-            let couponsOnPage = 0;
-
-            allButtons.forEach(btn => {
-                if (btn.textContent.toLowerCase().includes('aplicar') &&
-                    !btn.disabled &&
-                    btn.offsetParent !== null) {
-                    couponsOnPage++;
-                }
-            });
-
-            // Também verifica por outros elementos que podem indicar cupons
-            const couponElements = document.querySelectorAll('[class*="coupon"], [class*="promocode"], [class*="discount"]');
-            couponsOnPage += couponElements.length;
-
-            if (couponsOnPage === 0 && currentPage > 1) {
-                console.log('❌ Não há cupons na página atual - provavelmente chegou ao fim');
-                hasNext = false;
-            }
-
-            console.log(`🔍 Página ${currentPage}: ${hasNext ? 'TEM' : 'NÃO TEM'} próxima página`);
-            return hasNext;
-
-        } catch (error) {
-            console.error('Erro ao verificar próxima página:', error);
-            // Em caso de erro, assume que há próxima página se estiver nas primeiras páginas
-            return currentPage < 10;
         }
+
+        // 2. Verificar se a página atual é menor que o total de páginas estimado
+        // Isso cobre casos onde o ML não mostra o link explícito da próxima página no DOM,
+        // mas ainda existem páginas a serem visitadas.
+        if (currentPage < state.totalPages) {
+             console.log(`🤔 Página atual (${currentPage}) menor que totalPages estimado (${state.totalPages}). Assumindo que há próxima.`);
+             return true;
+        }
+
+        // 3. Verificar se há cupons na página atual.
+        // Se não houver mais cupons na página atual (e não for a primeira página),
+        // é um forte indicativo que chegamos ao fim.
+        const allButtons = document.querySelectorAll('button');
+        let couponsOnPage = 0;
+
+        allButtons.forEach(btn => {
+            const text = btn.textContent.toLowerCase();
+            if ((text.includes('aplicar') || text.includes('ativar') || text.includes('usar')) &&
+                !btn.disabled &&
+                btn.offsetParent !== null && // Garante que o botão está visível
+                !text.includes('filtro') && // Exclui botões de filtro
+                !text.includes('adicionar')) { // Exclui botões de adicionar genéricos
+                couponsOnPage++;
+            }
+        });
+
+        if (couponsOnPage === 0 && currentPage > 1) {
+            console.log('❌ Não há cupons "Aplicar/Ativar/Usar" na página atual e não é a primeira página - provavelmente chegou ao fim.');
+            return false;
+        }
+
+        // 4. Se não achou nada e não está na primeira página (e não há cupons), assume que acabou.
+        if (couponsOnPage === 0 && currentPage > 1) {
+            console.log('❌ Não há cupons na página atual e não é a primeira página - provavelmente chegou ao fim.');
+            return false;
+        }
+
+        console.log(`🔍 Página ${currentPage}: NÃO TEM próxima página ou cupons`);
+        return false;
     }
+
 
     // Obter total de páginas (melhorado)
     function getTotalPages() {
-        try {
-            let maxPage = 1;
+        let maxPage = 1;
 
+        try {
             // Método 1: Links de paginação
-            const links = document.querySelectorAll('a[href*="page="]');
+            const links = document.querySelectorAll('.andes-pagination__button a[href*="page="]');
             links.forEach(link => {
                 const match = link.href.match(/page=(\d+)/);
                 if (match) {
@@ -377,7 +368,7 @@ Status: ${state.isRunning ? '🔄 RODANDO...' : state.isFinished ? '🎉 CONCLU�
                 }
             });
 
-            // Método 2: Botões de paginação
+            // Método 2: Botões de paginação por texto (último número)
             const pageButtons = document.querySelectorAll('.andes-pagination__button');
             pageButtons.forEach(btn => {
                 const pageNum = parseInt(btn.textContent.trim());
@@ -386,77 +377,69 @@ Status: ${state.isRunning ? '🔄 RODANDO...' : state.isFinished ? '🎉 CONCLU�
                 }
             });
 
-            // Método 3: Informações de resultados
-            const resultInfo = document.querySelector('.ui-search-results-quantity');
+            // Método 3: Informações de resultados (estimativa)
+            const resultInfo = document.querySelector('.ui-search-results-quantity'); // Ex: "100 resultados"
             if (resultInfo) {
                 const text = resultInfo.textContent;
                 const match = text.match(/(\d+)\s*resultados/);
                 if (match) {
                     const totalResults = parseInt(match[1]);
-                    const estimatedPages = Math.ceil(totalResults / 48); // ML mostra ~48 cupons por página
+                    // Assumindo que ML mostra ~48 itens por página de cupons (pode variar)
+                    const estimatedPages = Math.ceil(totalResults / 48);
                     maxPage = Math.max(maxPage, estimatedPages);
                 }
             }
-
-            // Se não encontrou nada específico, usa o valor atual do estado ou assume um valor padrão
-            return maxPage > 1 ? maxPage : state.totalPages;
         } catch (error) {
-            console.log('Erro ao detectar páginas, usando valor atual:', error);
-            return state.totalPages;
+            console.log('Erro ao detectar páginas, usando valor atual do estado ou padrão:', error);
         }
+
+        // Garante que o total de páginas seja pelo menos a página atual ou o valor pré-existente
+        return Math.max(maxPage, state.currentPage, state.totalPages || 1);
     }
 
-    // Encontrar botões de cupons (corrigido)
+    // Encontrar botões de cupons (corrigido e aprimorado)
     function findCouponButtons() {
         const buttons = [];
 
         try {
-            // Busca por todos os botões que contenham "aplicar"
-            const allButtons = document.querySelectorAll('button');
-
-            allButtons.forEach(btn => {
-                const text = btn.textContent.toLowerCase().trim();
-                if ((text.includes('aplicar') || text.includes('ativar') || text.includes('usar')) &&
-                    !btn.disabled &&
-                    btn.offsetParent !== null &&
-                    !text.includes('filtro')) { // Exclui botões de filtro
-                    buttons.push(btn);
-                }
-            });
-
-            // Busca por seletores específicos do Mercado Livre
-            const specificSelectors = [
-                'button.andes-button--loud',
-                'button[class*="andes-button"][class*="primary"]',
-                'button[id*="coupon"]',
-                'button[data-testid*="coupon"]'
+            // Seletores que podem indicar botões de cupom
+            const commonSelectors = [
+                'button.andes-button',
+                'a.andes-button', // Às vezes são links com estilo de botão
+                '[data-testid*="coupon"] button',
+                '[id*="coupon"] button',
+                '.coupon-card button', // Exemplo de um componente de cupom
+                '[class*="apply-button"]',
+                '[class*="activate-button"]'
             ];
 
-            specificSelectors.forEach(selector => {
-                try {
-                    const elements = document.querySelectorAll(selector);
-                    elements.forEach(btn => {
-                        if (!btn.disabled &&
-                            btn.offsetParent !== null &&
-                            !buttons.includes(btn)) {
-                            buttons.push(btn);
-                        }
-                    });
-                } catch (e) {
-                    console.log(`Erro no seletor ${selector}:`, e);
-                }
+            commonSelectors.forEach(selector => {
+                document.querySelectorAll(selector).forEach(btn => {
+                    if (btn.tagName.toLowerCase() !== 'button' && btn.tagName.toLowerCase() !== 'a') return; // Apenas botões ou links com classe de botão
+
+                    const text = btn.textContent.toLowerCase().trim();
+                    const isRelevantText = text.includes('aplicar') || text.includes('ativar') || text.includes('usar');
+                    const isNotFilter = !text.includes('filtro');
+                    const isNotAdd = !text.includes('adicionar'); // Evita botões de adicionar genéricos
+                    const isVisible = btn.offsetParent !== null;
+                    const isNotDisabled = !btn.disabled && btn.getAttribute('aria-disabled') !== 'true';
+
+                    if (isRelevantText && isNotFilter && isNotAdd && isVisible && isNotDisabled) {
+                        buttons.push(btn);
+                    }
+                });
             });
 
         } catch (error) {
             console.error('Erro ao buscar botões de cupons:', error);
         }
 
-        // Remove duplicatas
+        // Remove duplicatas (seletor pode pegar o mesmo botão)
         const uniqueButtons = [...new Set(buttons)];
 
         console.log(`🎯 Encontrados ${uniqueButtons.length} botões de cupons`);
         uniqueButtons.forEach((btn, i) => {
-            console.log(`Botão ${i+1}:`, btn.textContent.trim(), btn.className);
+            console.log(`Botão ${i+1}: "${btn.textContent.trim()}" (Classe: ${btn.className})`);
         });
 
         return uniqueButtons;
@@ -467,12 +450,12 @@ Status: ${state.isRunning ? '🔄 RODANDO...' : state.isFinished ? '🎉 CONCLU�
         const currentPage = getCurrentPage();
 
         updateStatus(`🔍 Buscando cupons na página ${currentPage}...`);
-        await sleep(3000);
+        await sleep(3000); // Espera um pouco para a página carregar completamente
 
         const buttons = findCouponButtons();
 
         if (buttons.length === 0) {
-            updateStatus(`⚠️ Nenhum cupom encontrado na página ${currentPage}`);
+            updateStatus(`⚠️ Nenhum cupom encontrado na página ${currentPage}.`);
             return 0;
         }
 
@@ -481,28 +464,29 @@ Status: ${state.isRunning ? '🔄 RODANDO...' : state.isFinished ? '🎉 CONCLU�
         let applied = 0;
 
         for (let i = 0; i < buttons.length; i++) {
-            if (!state.isRunning) break;
+            if (!state.isRunning) break; // Interrompe se o usuário parar a automação
 
             try {
+                // Rola até o botão para garantir visibilidade antes do clique
+                buttons[i].scrollIntoView({ behavior: 'smooth', block: 'center' });
+                await sleep(500); // Pequena pausa para a rolagem
+
                 updateStatus(`🔄 Aplicando cupom ${i+1}/${buttons.length} (Página ${currentPage})`);
                 buttons[i].click();
                 applied++;
-                console.log(`✅ Cupom ${i+1} aplicado com sucesso`);
-                await sleep(1200);
+                console.log(`✅ Cupom ${i+1} ("${buttons[i].textContent.trim()}") aplicado com sucesso`);
+                await sleep(1500); // Tempo para o ML processar o clique
             } catch (error) {
-                console.error(`❌ Erro no cupom ${i+1}:`, error);
-                await sleep(500);
+                console.error(`❌ Erro ao clicar no cupom ${i+1} ("${buttons[i].textContent.trim()}"):`, error);
+                await sleep(700); // Pequena pausa antes de tentar o próximo
             }
         }
 
-        // Atualiza contador total
+        // Atualiza contador total e marca página como processada
         state.totalApplied += applied;
-
-        // Marca página como processada
         if (!state.processedPages.includes(currentPage)) {
             state.processedPages.push(currentPage);
         }
-
         saveState();
 
         updateStatus(`✅ Página ${currentPage}: ${applied} cupons aplicados!`);
@@ -514,9 +498,8 @@ Status: ${state.isRunning ? '🔄 RODANDO...' : state.isFinished ? '🎉 CONCLU�
         const currentPage = getCurrentPage();
         const nextPage = currentPage + 1;
 
-        // Verifica se realmente há próxima página
         if (!hasNextPage()) {
-            console.log('🏁 Não há próxima página disponível!');
+            console.log('🏁 Não há próxima página disponível ou cupons para aplicar!');
             return false;
         }
 
@@ -529,7 +512,7 @@ Status: ${state.isRunning ? '🔄 RODANDO...' : state.isFinished ? '🎉 CONCLU�
         const newUrl = `${baseUrl}?all=true&page=${nextPage}`;
 
         updateStatus(`🚀 Navegando para página ${nextPage}/${state.totalPages}...`);
-        window.location.replace(newUrl);
+        window.location.replace(newUrl); // Usa replace para não poluir o histórico
 
         return true;
     }
@@ -541,7 +524,10 @@ Status: ${state.isRunning ? '🔄 RODANDO...' : state.isFinished ? '🎉 CONCLU�
 
     // Processar automação completa
     async function runAutomation() {
-        if (!state.isRunning) return;
+        if (!state.isRunning) {
+            console.log('Automação interrompida.');
+            return;
+        }
 
         const currentPage = getCurrentPage();
         console.log(`🚀 Processando página ${currentPage}...`);
@@ -552,11 +538,12 @@ Status: ${state.isRunning ? '🔄 RODANDO...' : state.isFinished ? '🎉 CONCLU�
             if (detectedPages > state.totalPages) {
                 state.totalPages = detectedPages;
                 saveState();
+                updateStatus(`🔍 Total de páginas atualizado para ${state.totalPages}.`);
             }
 
             // Aplica cupons da página atual
             await applyCouponsOnCurrentPage();
-            await sleep(2000);
+            await sleep(2000); // Pausa antes de decidir a próxima ação
 
             // Verifica se ainda está rodando e se há próxima página
             if (state.isRunning) {
@@ -569,15 +556,15 @@ Status: ${state.isRunning ? '🔄 RODANDO...' : state.isFinished ? '🎉 CONCLU�
             }
 
         } catch (error) {
-            console.error('❌ Erro na automação:', error);
-            updateStatus(`❌ Erro na página ${currentPage}: ${error.message}`);
+            console.error('❌ Erro inesperado na automação:', error);
+            updateStatus(`❌ Erro na página ${currentPage}: ${error.message}. Tentando avançar...`);
 
-            await sleep(3000);
+            await sleep(3000); // Espera um pouco em caso de erro
             if (state.isRunning) {
                 if (hasNextPage()) {
-                    goToNextPage();
+                    goToNextPage(); // Tenta ir para a próxima página mesmo com erro
                 } else {
-                    finishAutomation();
+                    finishAutomation(); // Finaliza se não há mais páginas
                 }
             }
         }
@@ -587,13 +574,28 @@ Status: ${state.isRunning ? '🔄 RODANDO...' : state.isFinished ? '🎉 CONCLU�
     function startAutomation() {
         console.log('🚀 INICIANDO AUTOMAÇÃO!');
 
-        const totalPages = getTotalPages();
+        // Garante que o estado seja limpo apenas se não houver uma automação "finalizada" que queremos inspecionar.
+        // Se isFinished é true, mas o usuário quer iniciar uma nova, ele deve ter clicado em "Nova Automação" no modal.
+        if (state.isFinished) {
+            clearState(); // Limpa se for uma nova partida após uma conclusão
+        } else if (!state.isRunning && state.totalApplied > 0) {
+            // Se não está rodando, mas já aplicou cupons (i.e., foi interrompido),
+            // pergunta ao usuário se quer recomeçar ou continuar.
+            if (!confirm('Uma automação anterior foi interrompida. Deseja iniciar uma nova automação (limpar tudo) ou continuar de onde parou? \n\nClique em OK para continuar a atual, ou CANCELAR para iniciar uma nova.')) {
+                clearState();
+            }
+        }
+
+        const totalPages = getTotalPages(); // Recalcula total de páginas no início
 
         state.isRunning = true;
         state.currentPage = getCurrentPage();
         state.totalPages = totalPages;
         state.isFinished = false;
-        state.startTime = Date.now();
+        // Só define startTime se não houver um (primeira vez ou após clearState)
+        if (!localStorage.getItem(STORAGE.startTime)) {
+            state.startTime = Date.now();
+        }
 
         saveState();
         updateButton();
@@ -618,21 +620,18 @@ Status: ${state.isRunning ? '🔄 RODANDO...' : state.isFinished ? '🎉 CONCLU�
 
         state.isRunning = false;
         state.isFinished = true;
-        saveState();
-        updateButton();
+        saveState(); // Salva o estado como finalizado
+        updateButton(); // Atualiza o botão para "Ver Estatísticas"
 
         updateStatus('🎉 AUTOMAÇÃO CONCLUÍDA COM SUCESSO!');
 
-        // Mostra estatísticas finais
+        // Mostra estatísticas finais imediatamente
         setTimeout(() => {
             showFinalStats();
         }, 1000);
 
-        // Limpa o estado após 5 minutos para permitir nova automação
-        setTimeout(() => {
-            clearState();
-            updateStatus('✅ Pronto para nova automação!');
-        }, 300000); // 5 minutos
+        // REMOVIDO: A limpeza automática do estado.
+        // Agora, o estado só será limpo quando o usuário clicar em "Nova Automação" no modal de estatísticas.
     }
 
     // Atualizar botão
@@ -646,7 +645,7 @@ Status: ${state.isRunning ? '🔄 RODANDO...' : state.isFinished ? '🎉 CONCLU�
             btn.style.animation = 'pulse-red 1.5s infinite';
         } else if (state.isFinished) {
             btn.textContent = '🎉 VER ESTATÍSTICAS';
-            btn.style.background = 'linear-gradient(135deg, #8b5cf6, #7c3aed)';
+            btn.style.background = 'linear-gradient(135deg, #8b5cf6, #7c3aed)'; // Roxo para "Ver Estatísticas"
             btn.style.animation = 'none';
         } else {
             btn.textContent = '🚀 APLICAR TODOS OS CUPONS';
@@ -666,14 +665,14 @@ Status: ${state.isRunning ? '🔄 RODANDO...' : state.isFinished ? '🎉 CONCLU�
             if (state.isRunning) {
                 stopAutomation();
             } else if (state.isFinished) {
-                showFinalStats();
+                showFinalStats(); // Mostra as estatísticas quando clicado se finalizado
             } else {
                 startAutomation();
             }
         });
 
         document.body.appendChild(btn);
-        updateButton();
+        updateButton(); // Define o texto e estilo inicial do botão
     }
 
     // INICIALIZAÇÃO PRINCIPAL
@@ -683,21 +682,24 @@ Status: ${state.isRunning ? '🔄 RODANDO...' : state.isFinished ? '🎉 CONCLU�
         addCSS();
         createButton();
 
-        // Se estava rodando, continua automaticamente
+        // Lógica de continuação/status na inicialização
         if (state.isRunning && !state.isFinished) {
             console.log('🔄 CONTINUANDO AUTOMAÇÃO AUTOMATICAMENTE...');
             updateStatus('🔄 Continuando automação...');
-            updateButton();
+            // Inicia a execução da automação após um pequeno atraso para a página carregar
             setTimeout(() => runAutomation(), 3000);
         } else if (state.isFinished) {
-            updateStatus('🎉 Automação já foi concluída! Clique no botão para ver as estatísticas.');
-            updateButton();
+            // Se a automação terminou na última visita, informa e oferece para ver as estatísticas
+            updateStatus('🎉 Automação já foi concluída! Clique no botão para ver as estatísticas ou iniciar uma nova.');
+            updateButton(); // Assegura que o botão mostre "Ver Estatísticas"
+            // Não mostra o modal automaticamente ao carregar, apenas via clique
         } else {
+            // Estado inicial: script carregado, pronto para começar
             updateStatus('✅ Giu Auto ML Cupom carregado!\nClique no botão para começar.');
         }
     }
 
-    // INICIA ASSIM QUE POSSÍVEL
+    // INICIA ASSIM QUE POSSÍVEL (document-ready)
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', () => setTimeout(initialize, 1000));
     } else {
