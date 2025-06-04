@@ -176,7 +176,7 @@
         const elapsedTime = formatElapsedTime();
 
         const info = `
-📊 Giu Auto ML Cupon ${state.isFinished ? 'FINALIZADO' : 'ATIVADO'}
+📊 Giu Auto ML Cupom ${state.isFinished ? 'FINALIZADO' : 'ATIVADO'}
 ${message}
 ━━━━━━━━━━━━━━━━━━━━━━
 📄 Página: ${currentPage} / ${state.totalPages}
