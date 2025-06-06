@@ -74,5 +74,4 @@ Este script automatiza a aplicação de cupons no Mercado Livre, navegando por t
 ---
 
 **Desenvolvido por:** Giu  
-**Versão:** 1.0  
 **Compatibilidade:** Qualquer navegador com extensões de UserScript
