@@ -26,6 +26,11 @@ Este script automatiza a aplicação de cupons no Mercado Livre, navegando por t
 | **3. Iniciar** | Clique em "🚀 APLICAR TODOS OS CUPONS" | • Botão ficará vermelho<br>• Automação iniciará |
 | **4. Acompanhar** | Monitore o progresso | • Status atualizado em tempo real<br>• Navegação automática entre páginas |
 
+![image](https://github.com/user-attachments/assets/15fe0f53-4d6a-4ef4-97f6-3b61a624d04e)
+![image](https://github.com/user-attachments/assets/3f32c6bd-c4d2-4c0e-98dc-3c53a41b9b59)
+![image](https://github.com/user-attachments/assets/e8c64a2b-8ac9-4d77-93ca-724084d7ebcb)
+![image](https://github.com/user-attachments/assets/b1982931-1fe4-4b51-ab55-38489eacbd80)
+
 ---
 
 ## 🔧 Funcionalidades Técnicas
