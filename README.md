@@ -29,7 +29,7 @@ Este script automatiza a aplicação de cupons no Mercado Livre, navegando por t
 ![image](https://github.com/user-attachments/assets/dd07c97b-2c0e-4f76-95d5-d9fa03dd35ff)
 ![image](https://github.com/user-attachments/assets/f40370ed-7323-4fca-882d-b18cc919e290)
 ![image](https://github.com/user-attachments/assets/fc393464-39d5-43ab-a089-7737e54b2ff9)
-![image](https://github.com/user-attachments/assets/b1982931-1fe4-4b51-ab55-38489eacbd80)
+![image](https://github.com/user-attachments/assets/3db9cee6-35eb-45b3-9762-46e61b47ba54)
 
 ---
 
