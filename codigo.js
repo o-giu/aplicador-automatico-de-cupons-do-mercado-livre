@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         Giu - Mercado Livre - Aplicador Automático de Cupons
-// @version      2.0
+// @version      4.0
 // @description  Aplica todos os cupons de todas as páginas automaticamente no Mercado Livre
 // @author       Giu
 // @match        https://www.mercadolivre.com.br/cupons*
@@ -24,25 +24,57 @@
         return;
     }
 
+    const START_URL = 'https://www.mercadolivre.com.br/cupons/filter?all=true';
+
     const STORAGE = {
-        running: 'ML_AUTO_RUNNING_V2',
-        page: 'ML_AUTO_PAGE_V2',
-        total: 'ML_AUTO_TOTAL_V2',
-        applied: 'ML_AUTO_APPLIED_V2',
-        processed: 'ML_AUTO_PROCESSED_V2',
-        finished: 'ML_AUTO_FINISHED_V2',
-        startTime: 'ML_AUTO_START_TIME_V2'
+        running: 'ML_AUTO_RUNNING_V4',
+        page: 'ML_AUTO_PAGE_V4',
+        total: 'ML_AUTO_TOTAL_V4',
+        applied: 'ML_AUTO_APPLIED_V4',
+        processed: 'ML_AUTO_PROCESSED_V4',
+        finished: 'ML_AUTO_FINISHED_V4',
+        startTime: 'ML_AUTO_START_TIME_V4'
     };
 
+    let keepAwake = null;
     let state = {
         isRunning: localStorage.getItem(STORAGE.running) === 'true',
         currentPage: parseInt(localStorage.getItem(STORAGE.page) || '1', 10),
-        totalPages: parseInt(localStorage.getItem(STORAGE.total) || '25', 10),
+        totalPages: parseInt(localStorage.getItem(STORAGE.total) || '1', 10),
         totalApplied: parseInt(localStorage.getItem(STORAGE.applied) || '0', 10),
         processedPages: JSON.parse(localStorage.getItem(STORAGE.processed) || '[]'),
         isFinished: localStorage.getItem(STORAGE.finished) === 'true',
         startTime: parseInt(localStorage.getItem(STORAGE.startTime) || '0', 10)
     };
+
+    function startKeepAwake() {
+        if (keepAwake) return;
+        try {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            const context = new AudioContext();
+            const oscillator = context.createOscillator();
+            const gain = context.createGain();
+            gain.gain.value = 0.0001;
+            oscillator.frequency.value = 20;
+            oscillator.connect(gain);
+            gain.connect(context.destination);
+            oscillator.start();
+            keepAwake = { context, oscillator, gain };
+        } catch (e) {
+            console.error('Keep-awake failed:', e);
+        }
+    }
+
+    function stopKeepAwake() {
+        if (!keepAwake) return;
+        try {
+            keepAwake.oscillator.stop();
+            keepAwake.context.close();
+            keepAwake = null;
+        } catch (e) {
+            console.error('Stop keep-awake failed:', e);
+        }
+    }
 
     function saveState() {
         localStorage.setItem(STORAGE.running, state.isRunning);
@@ -59,7 +91,7 @@
         state = {
             isRunning: false,
             currentPage: 1,
-            totalPages: 25,
+            totalPages: 1,
             totalApplied: 0,
             processedPages: [],
             isFinished: false,
@@ -86,12 +118,10 @@
             min-width: 280px !important;
             transition: background 0.3s ease, transform 0.3s ease;
         }
-
         @keyframes pulse-red {
             0%, 100% { transform: scale(1); box-shadow: 0 4px 20px rgba(239, 68, 68, 0.4); }
             50% { transform: scale(1.05); box-shadow: 0 6px 25px rgba(239, 68, 68, 0.6); }
         }
-
         #super-status {
             position: fixed !important;
             top: 90px !important;
@@ -109,7 +139,6 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.4);
             white-space: pre-wrap;
         }
-
         #super-final-stats {
             position: fixed !important;
             top: 50% !important;
@@ -130,46 +159,21 @@
             animation: slideIn 0.5s ease-out !important;
             border: 2px solid rgba(255,255,255,0.1);
         }
-
         .stats-content-wrapper {
-            overflow-y: auto;
-            padding-right: 15px;
-            margin: 20px 0;
-            text-align: left;
+            overflow-y: auto; padding-right: 15px; margin: 20px 0; text-align: left;
         }
-        
-        .stats-content-wrapper p {
-            word-wrap: break-word;
-        }
-
+        .stats-content-wrapper p { word-wrap: break-word; }
         @keyframes slideIn {
             from { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
             to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
         }
-
         .stats-button {
-            background: rgba(255,255,255,0.2) !important;
-            border: 1px solid white !important;
-            color: white !important;
-            padding: 10px 20px !important;
-            border-radius: 5px !important;
-            cursor: pointer !important;
-            margin: 5px !important;
-            font-size: 14px !important;
-            transition: background 0.2s ease, transform 0.1s ease;
+            background: rgba(255,255,255,0.2) !important; border: 1px solid white !important; color: white !important; padding: 10px 20px !important;
+            border-radius: 5px !important; cursor: pointer !important; margin: 5px !important; font-size: 14px !important; transition: background 0.2s ease, transform 0.1s ease;
         }
-        .stats-button:hover {
-            background: rgba(255,255,255,0.3) !important;
-            transform: translateY(-1px);
-        }
-        #new-automation-btn {
-            background: rgba(59, 130, 246, 0.9) !important;
-            color: white !important;
-            font-weight: bold !important;
-        }
-        #new-automation-btn:hover {
-            background: rgba(59, 130, 246, 1) !important;
-        }
+        .stats-button:hover { background: rgba(255,255,255,0.3) !important; transform: translateY(-1px); }
+        #new-automation-btn { background: rgba(59, 130, 246, 0.9) !important; color: white !important; font-weight: bold !important; }
+        #new-automation-btn:hover { background: rgba(59, 130, 246, 1) !important; }
     `;
 
     function addCSS() {
@@ -199,7 +203,7 @@
             status.id = 'super-status';
             document.body.appendChild(status);
         }
-        
+
         if (state.isFinished) {
             status.style.borderLeftColor = '#22c55e';
         } else if (state.isRunning) {
@@ -215,7 +219,7 @@
 📊 Giu Auto ML Cupom ${state.isFinished ? 'FINALIZADO' : 'ATIVO'}
 ${message}
 ━━━━━━━━━━━━━━━━━━━━━━
-📄 Página: ${state.processedPages.length > 0 ? currentPage : '-'} / ${state.totalPages}
+📄 Página: ${state.isRunning || state.isFinished ? currentPage : '-'} / ${state.totalPages}
 ✅ Cupons aplicados: ${state.totalApplied}
 📋 Páginas processadas: ${state.processedPages.length}
 ⏱️ Tempo decorrido: ${elapsedTime}
@@ -279,44 +283,41 @@ Status: ${state.isRunning ? '🔄 RODANDO...' : state.isFinished ? '🎉 CONCLU�
 
     function hasNextPage() {
         const currentPage = getCurrentPage();
+        if (currentPage >= state.totalPages) {
+            return false;
+        }
+
         const nextPageSelectors = [
-            `a[href*="page=${currentPage + 1}"]`,
+            'a.andes-pagination__button--next',
+            'li.andes-pagination__button--next',
             'a[title="Siguiente"]',
             'a[aria-label="Siguiente"]',
-            'a[aria-label="Próximo"]',
-            '.andes-pagination__button--next:not([disabled])'
+            'a[aria-label="Próximo"]'
         ];
 
         for (const selector of nextPageSelectors) {
             const element = document.querySelector(selector);
-            if (element && !element.disabled && element.getAttribute('aria-disabled') !== 'true') {
+            if (element && !element.hasAttribute('disabled') && element.getAttribute('aria-disabled') !== 'true') {
                 return true;
             }
         }
-        
-        if (currentPage < state.totalPages) {
-             return true;
-        }
-
-        const hasCouponButtons = findCouponButtons().length > 0;
-        if (!hasCouponButtons && currentPage > 1) {
-            return false;
-        }
-
         return false;
     }
 
     function getTotalPages() {
-        let maxPage = 1;
-        const pageLinks = document.querySelectorAll('.andes-pagination__button a[href*="page="], .andes-pagination__button');
+        let maxPage = 0;
+        const pageLinks = document.querySelectorAll('.andes-pagination__button a, .andes-pagination__page-count');
         pageLinks.forEach(link => {
-            const pageNumText = link.href ? (link.href.match(/page=(\d+)/) || [])[1] : link.textContent.trim();
-            const pageNum = parseInt(pageNumText, 10);
-            if (!isNaN(pageNum) && pageNum > maxPage) {
-                maxPage = pageNum;
+            const pageNumText = link.textContent.trim().match(/(\d+)$/);
+            if (pageNumText) {
+                 const pageNum = parseInt(pageNumText[1], 10);
+                 if (!isNaN(pageNum) && pageNum > maxPage) {
+                    maxPage = pageNum;
+                 }
             }
         });
-        return Math.max(maxPage, state.currentPage, state.totalPages || 1);
+        const currentPage = getCurrentPage();
+        return Math.max(maxPage, currentPage, 1);
     }
 
     function findCouponButtons() {
@@ -339,7 +340,7 @@ Status: ${state.isRunning ? '🔄 RODANDO...' : state.isFinished ? '🎉 CONCLU�
     async function applyCouponsOnCurrentPage() {
         const currentPage = getCurrentPage();
         updateStatus(`Buscando cupons na pág. ${currentPage}...`);
-        await sleep(1000);
+        await sleep(500);
 
         const buttons = findCouponButtons();
         if (buttons.length === 0) {
@@ -352,12 +353,10 @@ Status: ${state.isRunning ? '🔄 RODANDO...' : state.isFinished ? '🎉 CONCLU�
         for (let i = 0; i < buttons.length; i++) {
             if (!state.isRunning) break;
             try {
-                buttons[i].scrollIntoView({ behavior: 'smooth', block: 'center' });
-                await sleep(200);
                 updateStatus(`Aplicando cupom ${i+1}/${buttons.length} (Pág. ${currentPage})`);
                 buttons[i].click();
                 applied++;
-                await sleep(400);
+                await sleep(300);
             } catch (error) {
                 console.error(`Erro ao clicar no cupom ${i+1}:`, error);
                 await sleep(500);
@@ -380,7 +379,7 @@ Status: ${state.isRunning ? '🔄 RODANDO...' : state.isFinished ? '🎉 CONCLU�
         const nextPage = getCurrentPage() + 1;
         state.currentPage = nextPage;
         saveState();
-        const newUrl = `https://www.mercadolivre.com.br/cupons/filter?all=true&page=${nextPage}`;
+        const newUrl = `${START_URL}&page=${nextPage}`;
         updateStatus(`Navegando p/ pág. ${nextPage}/${state.totalPages}...`);
         window.location.replace(newUrl);
         return true;
@@ -392,7 +391,7 @@ Status: ${state.isRunning ? '🔄 RODANDO...' : state.isFinished ? '🎉 CONCLU�
 
     async function runAutomation() {
         if (!state.isRunning) return;
-        
+
         const currentPage = getCurrentPage();
         try {
             const detectedPages = getTotalPages();
@@ -403,7 +402,7 @@ Status: ${state.isRunning ? '🔄 RODANDO...' : state.isFinished ? '🎉 CONCLU�
             }
 
             await applyCouponsOnCurrentPage();
-            await sleep(1500);
+            await sleep(1000);
 
             if (state.isRunning) {
                 if (!goToNextPage()) {
@@ -430,13 +429,23 @@ Status: ${state.isRunning ? '🔄 RODANDO...' : state.isFinished ? '🎉 CONCLU�
             clearState();
         }
 
+        startKeepAwake();
         state.isRunning = true;
-        state.currentPage = getCurrentPage();
-        state.totalPages = getTotalPages();
         state.isFinished = false;
         if (!state.startTime || state.startTime === 0) {
             state.startTime = Date.now();
         }
+
+        if (!window.location.href.startsWith(START_URL)) {
+             state.currentPage = 1;
+             saveState();
+             updateStatus('Redirecionando para a página inicial de cupons...');
+             window.location.href = START_URL;
+             return;
+        }
+
+        state.currentPage = getCurrentPage();
+        state.totalPages = getTotalPages();
         saveState();
         updateButton();
         updateStatus(`Automação iniciada! Processando até ${state.totalPages} pág...`);
@@ -444,6 +453,7 @@ Status: ${state.isRunning ? '🔄 RODANDO...' : state.isFinished ? '🎉 CONCLU�
     }
 
     function stopAutomation() {
+        stopKeepAwake();
         state.isRunning = false;
         saveState();
         updateButton();
@@ -451,6 +461,7 @@ Status: ${state.isRunning ? '🔄 RODANDO...' : state.isFinished ? '🎉 CONCLU�
     }
 
     function finishAutomation() {
+        stopKeepAwake();
         state.isRunning = false;
         state.isFinished = true;
         saveState();
@@ -501,12 +512,16 @@ Status: ${state.isRunning ? '🔄 RODANDO...' : state.isFinished ? '🎉 CONCLU�
         createButton();
 
         if (state.isRunning && !state.isFinished) {
+            startKeepAwake();
             updateStatus('Continuando automação...');
             setTimeout(() => runAutomation(), 2000);
         } else if (state.isFinished) {
+            stopKeepAwake();
             updateStatus('Automação concluída! Veja as estatísticas.');
             updateButton();
+            showFinalStats();
         } else {
+            stopKeepAwake();
             updateStatus('Pronto para começar. Clique no botão!');
         }
     }
