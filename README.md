@@ -22,11 +22,11 @@ Este script automatiza a aplicação de cupons no Mercado Livre, navegando por t
 | Passo | Ação | Resultado Esperado |
 |-------|------|-------------------|
 | **1. Acesso** | Navegue para `https://www.mercadolivre.com.br/cupons` | Script será carregado automaticamente |
-| **2. Interface** | Observe os elementos na tela | • Botão verde no canto superior direito<br>• Painel de status abaixo do botão <br>![image](https://github.com/user-attachments/assets/dd07c97b-2c0e-4f76-95d5-d9fa03dd35ff) |
-| **3. Iniciar** | Clique em "🚀 APLICAR TODOS OS CUPONS" | • Botão ficará vermelho<br>• Automação iniciará <br>![image](https://github.com/user-attachments/assets/f40370ed-7323-4fca-882d-b18cc919e290) |
-| **4. Acompanhar** | Monitore o progresso | • Status atualizado em tempo real<br>• Navegação automática entre páginas <br>![image](https://github.com/user-attachments/assets/fc393464-39d5-43ab-a089-7737e54b2ff9) |
+| **2. Interface** | Observe os elementos na tela | • Botão verde no canto superior direito<br>• Painel de status abaixo do botão <br>![image](https://github.com/user-attachments/assets/9dc94157-2177-472f-b2d5-7126fa485d3b) |
+| **3. Iniciar** | Clique em "🚀 APLICAR TODOS OS CUPONS" | • Botão ficará vermelho<br>• Automação iniciará <br>![image](https://github.com/user-attachments/assets/ed3994dd-b00a-4617-bbc8-bf3cc78aa006) |
+| **4. Acompanhar** | Monitore o progresso | • Status atualizado em tempo real<br>• Navegação automática entre páginas <br>![image](https://github.com/user-attachments/assets/81c4f72a-5019-4c3f-a29f-b52ae33c775a) |
 
-![image](https://github.com/user-attachments/assets/3db9cee6-35eb-45b3-9762-46e61b47ba54)
+![image](https://github.com/user-attachments/assets/386e0fb3-e9d9-46df-bc81-afb5f30d01d4)
 
 ---
 
