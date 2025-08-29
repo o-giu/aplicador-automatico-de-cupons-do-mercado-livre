@@ -2,7 +2,6 @@
 
 ## 📋 Visão Geral
 
-Como eu sou preguiçoso para ficar clicando na mesma coisa o tempo todo, eu decidi criar um sistema de automação para mim e de código próprio.<br>
 Este script automatiza a aplicação de cupons no Mercado Livre, navegando por todas as páginas disponíveis e aplicando todos os cupons encontrados de forma automática.
 
 ---
