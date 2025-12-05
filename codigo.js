@@ -6,8 +6,8 @@
 // @match        https://www.mercadolivre.com.br/cupons*
 // @grant        none
 // @run-at       document-ready
-// @downloadURL  https://github.com/o-giu/aplicador-automatico-de-cupons-do-mercado-livre/edit/main/codigo.js
-// @updateURL    https://github.com/o-giu/aplicador-automatico-de-cupons-do-mercado-livre/edit/main/codigo.js
+// @downloadURL  https://raw.githubusercontent.com/o-giu/aplicador-automatico-de-cupons-do-mercado-livre/main/codigo.js
+// @updateURL    https://raw.githubusercontent.com/o-giu/aplicador-automatico-de-cupons-do-mercado-livre/main/codigo.js
 // ==/UserScript==
 
 (function() {
